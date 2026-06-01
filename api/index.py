@@ -17,6 +17,11 @@ with open("q-vercel-latency.json") as f:
     DATA = json.load(f)
 
 
+@app.get("/")
+def root():
+    return {"status": "ok"}
+
+
 @app.options("/")
 def options():
     response = Response()
