@@ -42,7 +42,7 @@ class RequestBody(BaseModel):
 def metrics(payload: RequestBody, response: Response):
     response.headers["Access-Control-Allow-Origin"] = "*"
 
-    result = {}
+    result = []
 
     for region in payload.regions:
         rows = [r for r in DATA if r["region"] == region]
@@ -50,11 +50,12 @@ def metrics(payload: RequestBody, response: Response):
         latencies = [r["latency_ms"] for r in rows]
         uptimes = [r["uptime_pct"] for r in rows]
 
-        result[region] = {
+        result.append({
+            "region": region,
             "avg_latency": float(np.mean(latencies)),
             "p95_latency": float(np.percentile(latencies, 95)),
-            "avg_uptime": float(np.mean(uptimes)),
-            "breaches": sum(1 for x in latencies if x > payload.threshold_ms),
-        }
+    "avg_uptime": float(np.mean(uptimes)),
+    "breaches": sum(1 for x in latencies if x > payload.threshold_ms),
+})
 
     return result
