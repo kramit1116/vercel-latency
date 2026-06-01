@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 import json
-import math
+import numpy as np
 
 app = FastAPI()
 
@@ -15,12 +15,6 @@ app.add_middleware(
 
 with open("q-vercel-latency.json") as f:
     DATA = json.load(f)
-
-
-def p95(values):
-    values = sorted(values)
-    k = math.ceil(0.95 * len(values)) - 1
-    return values[k]
 
 
 @app.options("/")
@@ -48,9 +42,9 @@ def metrics(payload: dict, response: Response):
         uptimes = [r["uptime_pct"] for r in rows]
 
         result[region] = {
-            "avg_latency": sum(latencies) / len(latencies),
-            "p95_latency": p95(latencies),
-            "avg_uptime": sum(uptimes) / len(uptimes),
+            "avg_latency": float(np.mean(latencies)),
+            "p95_latency": float(np.percentile(latencies, 95)),
+            "avg_uptime": float(np.mean(uptimes)),
             "breaches": sum(1 for x in latencies if x > threshold),
         }
 
