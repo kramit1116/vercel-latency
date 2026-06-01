@@ -26,16 +26,20 @@ def options():
     return response
 
 
-@app.post("/")
-def metrics(payload: dict, response: Response):
-    response.headers["Access-Control-Allow-Origin"] = "*"
+from pydantic import BaseModel
+from typing import List
 
-    regions = payload["regions"]
-    threshold = payload["threshold_ms"]
+class RequestBody(BaseModel):
+    regions: List[str]
+    threshold_ms: float
+
+@app.post("/")
+def metrics(payload: RequestBody, response: Response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
 
     result = {}
 
-    for region in regions:
+    for region in payload.regions:
         rows = [r for r in DATA if r["region"] == region]
 
         latencies = [r["latency_ms"] for r in rows]
@@ -45,7 +49,7 @@ def metrics(payload: dict, response: Response):
             "avg_latency": float(np.mean(latencies)),
             "p95_latency": float(np.percentile(latencies, 95)),
             "avg_uptime": float(np.mean(uptimes)),
-            "breaches": sum(1 for x in latencies if x > threshold),
+            "breaches": sum(1 for x in latencies if x > payload.threshold_ms),
         }
 
     return result
