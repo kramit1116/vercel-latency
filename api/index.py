@@ -1,10 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
+from fastapi.middleware.cors import CORSMiddleware
 import json
 import math
 
 app = FastAPI()
-
-from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,
@@ -17,13 +16,26 @@ app.add_middleware(
 with open("q-vercel-latency.json") as f:
     DATA = json.load(f)
 
+
 def p95(values):
     values = sorted(values)
     k = math.ceil(0.95 * len(values)) - 1
     return values[k]
 
+
+@app.options("/")
+def options():
+    response = Response()
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
+
+
 @app.post("/")
-def metrics(payload: dict):
+def metrics(payload: dict, response: Response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+
     regions = payload["regions"]
     threshold = payload["threshold_ms"]
 
@@ -36,10 +48,10 @@ def metrics(payload: dict):
         uptimes = [r["uptime_pct"] for r in rows]
 
         result[region] = {
-            "avg_latency": sum(latencies)/len(latencies),
+            "avg_latency": sum(latencies) / len(latencies),
             "p95_latency": p95(latencies),
-            "avg_uptime": sum(uptimes)/len(uptimes),
-            "breaches": sum(1 for x in latencies if x > threshold)
+            "avg_uptime": sum(uptimes) / len(uptimes),
+            "breaches": sum(1 for x in latencies if x > threshold),
         }
 
     return result
